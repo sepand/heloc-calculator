@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HELOC Amortization Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <main class="app-shell">
+    <header class="hero">
+      <h1>HELOC Amortization Calculator</h1>
+      <p>Track variable APR, daily periodic rates, and principal reduction over time.</p>
+    </header>
+
+    <section class="card">
+      <h2>Loan Setup</h2>
+      <form id="loanForm" class="grid two-col">
+        <label>Original Mortgage Principal
+          <input type="number" id="originalPrincipal" min="0" step="0.01" value="350000" required>
+        </label>
+        <label>Start Date
+          <input type="date" id="startDate" required>
+        </label>
+        <label>Term (months)
+          <input type="number" id="termMonths" min="1" step="1" value="360" required>
+        </label>
+        <label>Days in Billing Cycle
+          <input type="number" id="billingCycleDays" min="1" max="366" step="1" value="30" required>
+        </label>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>Rate Changes</h2>
+        <button id="addRateRow" type="button">Add Rate Change</button>
+      </div>
+      <p class="hint">Provide at least one row. APR and/or Daily Periodic Rate can be entered for each Rate Date.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Rate Date</th>
+            <th>APR (%)</th>
+            <th>Daily Periodic Rate</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rateTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>Monthly Additional Principal Changes</h2>
+        <button id="addPrincipalChangeRow" type="button">Add Change</button>
+      </div>
+      <p class="hint">Schedule changes to the recurring monthly extra principal amount. Each row's amount applies starting on its Effective Date until the next change.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Effective Date</th>
+            <th>Monthly Extra Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="principalChangeTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>Additional Principal Payments</h2>
+        <button id="addExtraRow" type="button">Add Payment</button>
+      </div>
+      <div class="grid two-col" style="margin-bottom: 12px;">
+        <label>Monthly Additional Principal Amount (Initial)
+          <input type="number" id="monthlyExtraPrincipal" min="0" step="0.01" value="0">
+        </label>
+      </div>
+      <p class="hint">These are one-time extra principal payments, in addition to the monthly extra amount.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Payment Date</th>
+            <th>Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="extraTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card controls">
+      <button id="calculateBtn" type="button" class="primary">Calculate</button>
+      <button id="exportBtn" type="button">Export Scenario</button>
+      <label class="import-label">Import Scenario
+        <input id="importInput" type="file" accept=".json,.jason,application/json,text/json">
+      </label>
+      <button id="resetBtn" type="button">Reset</button>
+    </section>
+
+    <section class="card results" id="summaryCard">
+      <h2>Summary</h2>
+      <div id="summaryGrid" class="summary-grid"></div>
+    </section>
+
+    <section class="card results" id="comparisonCard">
+      <h2>Payoff Comparison: Your Plan vs. Minimum Payments Only</h2>
+      <p class="hint">Baseline assumes the same rate schedule but no monthly extra or one-time principal payments.</p>
+      <div id="comparisonGrid" class="summary-grid"></div>
+    </section>
+
+    <section class="card results" id="chartsCard">
+      <h2>Visualization</h2>
+      <div class="charts">
+        <div>
+          <h3>Remaining Principal: Plan vs. Minimum Payments</h3>
+          <canvas id="principalChart" width="900" height="300"></canvas>
+        </div>
+        <div>
+          <h3>Interest vs Principal Paid</h3>
+          <canvas id="paymentChart" width="900" height="300"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="card results">
+      <h2>Amortization Detail</h2>
+      <div class="table-wrap">
+        <table id="resultTable">
+          <thead>
+            <tr>
+              <th>Cycle #</th>
+              <th>Cycle End</th>
+              <th>APR (%)</th>
+              <th>Daily Periodic Rate</th>
+              <th>Avg Daily Principal Balance</th>
+              <th>Interest</th>
+              <th>Scheduled Payment</th>
+              <th>Monthly Extra</th>
+              <th>One-Time Extras</th>
+              <th>Total Principal Paid</th>
+              <th>Ending Balance</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+      <p id="warningText" class="warning"></p>
+    </section>
+  </main>
+
+  <template id="rateRowTemplate">
+    <tr>
+      <td><input type="date" class="rate-date" required></td>
+      <td><input type="number" class="rate-apr" min="0" max="100" step="0.0001" placeholder="e.g. 7.25"></td>
+      <td><input type="number" class="rate-dpr" min="0" step="0.00000001" placeholder="e.g. 0.00019863"></td>
+      <td><button type="button" class="danger remove-row">Remove</button></td>
+    </tr>
+  </template>
+
+  <template id="extraRowTemplate">
+    <tr>
+      <td><input type="date" class="extra-date" required></td>
+      <td><input type="number" class="extra-amount" min="0" step="0.01" required></td>
+      <td><button type="button" class="danger remove-row">Remove</button></td>
+    </tr>
+  </template>
+
+  <template id="principalChangeRowTemplate">
+    <tr>
+      <td><input type="date" class="pc-date" required></td>
+      <td><input type="number" class="pc-amount" min="0" step="0.01" required></td>
+      <td><button type="button" class="danger remove-row">Remove</button></td>
+    </tr>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
